@@ -2,6 +2,9 @@
 # Cron jobs for news scrapers
 # Each scraper runs at different intervals with locking mechanism
 
+PYTHONPATH=/app
+PATH=/usr/local/bin:/usr/bin:/bin
+
 # Run Prothom Alo every 10 minutes
 */10 * * * * flock -n /tmp/prothomalo.lock python /app/app/scrapers/prothomalo_bangla.py >> /app/logs/cron.log 2>&1
 
