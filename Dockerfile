@@ -33,15 +33,17 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY app/ ./app/
 
-# Copy crontab and entrypoint
+# Copy crontab, wrapper script and entrypoint
 COPY crontab /app/crontab
+COPY run_scraper.sh /app/run_scraper.sh
 COPY entrypoint.sh /app/entrypoint.sh
 
 # Create necessary directories
 RUN mkdir -p logs output /tmp
 
-# Make entrypoint executable
-RUN chmod +x /app/entrypoint.sh
+# Make scripts executable
+RUN chmod +x /app/entrypoint.sh && \
+    chmod +x /app/run_scraper.sh
 
 # Setup cron permissions
 RUN chmod 0644 /app/crontab
