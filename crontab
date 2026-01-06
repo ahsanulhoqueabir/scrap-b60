@@ -1,0 +1,36 @@
+#!/bin/bash
+# Cron jobs for news scrapers
+# Each scraper runs at different intervals with locking mechanism
+
+# Run Prothom Alo every 10 minutes
+*/10 * * * * flock -n /tmp/prothomalo.lock python /app/app/scrapers/prothomalo_bangla.py >> /app/logs/cron.log 2>&1
+
+# Run Daily Star every 15 minutes
+*/15 * * * * flock -n /tmp/dailystar.lock python /app/app/scrapers/dailystar.py >> /app/logs/cron.log 2>&1
+
+# Run BD Pratidin every 15 minutes (offset by 5 minutes)
+5,20,35,50 * * * * flock -n /tmp/bdpratidin.lock python /app/app/scrapers/bd_pratidin.py >> /app/logs/cron.log 2>&1
+
+# Run BD24Live every 15 minutes (offset by 7 minutes)
+7,22,37,52 * * * * flock -n /tmp/bd24live.lock python /app/app/scrapers/bd24live.py >> /app/logs/cron.log 2>&1
+
+# Run BD24Live Bangla every 15 minutes (offset by 9 minutes)
+9,24,39,54 * * * * flock -n /tmp/bd24live_bangla.lock python /app/app/scrapers/bd24live_bangla.py >> /app/logs/cron.log 2>&1
+
+# Run Bangla Tribune every 12 minutes
+*/12 * * * * flock -n /tmp/banglatribune.lock python /app/app/scrapers/bangla_tribune.py >> /app/logs/cron.log 2>&1
+
+# Run Daily Campus Bangla every 15 minutes (offset by 11 minutes)
+11,26,41,56 * * * * flock -n /tmp/dailycampus.lock python /app/app/scrapers/dailycampus_bangla.py >> /app/logs/cron.log 2>&1
+
+# Run TBS News every 20 minutes
+*/20 * * * * flock -n /tmp/tbs.lock python /app/app/scrapers/tbs_top.py >> /app/logs/cron.log 2>&1
+
+# Run Jagonews24 every 15 minutes (offset by 3 minutes)
+3,18,33,48 * * * * flock -n /tmp/jagonews.lock python /app/app/scrapers/jagonews24.py >> /app/logs/cron.log 2>&1
+
+# Run BBC World every 30 minutes
+*/30 * * * * flock -n /tmp/bbc.lock python /app/app/scrapers/bbc_world.py >> /app/logs/cron.log 2>&1
+
+# Cleanup old logs daily at 2 AM
+0 2 * * * find /app/logs -name "*.log" -mtime +7 -delete >> /app/logs/cron.log 2>&1

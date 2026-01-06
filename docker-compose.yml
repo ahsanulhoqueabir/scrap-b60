@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: news-scraper:latest
+    container_name: news_scraper
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Dhaka
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+    # No ports exposed - runs purely on cron
+    networks:
+      - scraper_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pgrep -x cron > /dev/null || exit 1"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 1m
+
+networks:
+  scraper_network:
+    driver: bridge

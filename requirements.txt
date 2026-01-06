@@ -1,0 +1,19 @@
+# Web Scraping Dependencies
+feedparser==6.0.12
+beautifulsoup4==4.12.2
+curl-cffi==0.14.0
+requests==2.32.5
+newspaper4k==0.9.4.1
+
+# Scheduling
+schedule==1.2.1
+
+# Environment Management
+python-dotenv==1.0.1
+
+# HTML Parser
+lxml>=5.2.0
+html5lib==1.1
+
+# Utilities
+urllib3==2.2.0
