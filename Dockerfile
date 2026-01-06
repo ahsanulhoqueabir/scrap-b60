@@ -50,5 +50,5 @@ RUN chmod 0644 /app/crontab
 HEALTHCHECK --interval=5m --timeout=10s --start-period=40s --retries=3 \
     CMD pgrep -x cron > /dev/null || exit 1
 
-# Run cron in foreground
-CMD ["/app/entrypoint.sh"]
+# Use ENTRYPOINT instead of CMD to prevent override by Coolify
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -29,7 +29,7 @@ output/
 
 # Environment variables
 .env
-
+cmd.md
 # OS
 .DS_Store
 Thumbs.db
