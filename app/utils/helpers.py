@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, List
 from bs4 import BeautifulSoup
 from curl_cffi import requests as curl_requests
 import requests
+import cloudscraper
 from app.config import config
 from app.logger import setup_logger
 from app.retry import retry_on_exception
@@ -69,7 +70,7 @@ def fetch_with_curl_cffi(
     impersonate: str = "chrome142"
 ) -> curl_requests.Response:
     """
-    Fetch URL using curl_cffi library with retry logic
+    Fetch URL using curl_cffi library with retry logic and enhanced headers
     
     Args:
         url: URL to fetch
@@ -78,10 +79,103 @@ def fetch_with_curl_cffi(
     Returns:
         Response object
     """
+    # Enhanced headers to bypass bot detection
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,bn;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.google.com/',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
+    }
+    
     logger.debug(f"Fetching URL with curl_cffi ({impersonate}): {url}")
-    response = curl_requests.get(url, impersonate=impersonate, timeout=config.REQUEST_TIMEOUT)
+    
+    # Add random delay to mimic human behavior
+    time.sleep(random.uniform(0.5, 1.5))
+    
+    response = curl_requests.get(
+        url, 
+        impersonate=impersonate, 
+        headers=headers,
+        timeout=config.REQUEST_TIMEOUT,
+        allow_redirects=True
+    )
     response.raise_for_status()
     return response
+
+
+@retry_on_exception(max_retries=3, delay=2)
+def fetch_with_cloudscraper(url: str) -> requests.Response:
+    """
+    Fetch URL using cloudscraper to bypass Cloudflare and anti-bot protection
+    
+    Args:
+        url: URL to fetch
+        
+    Returns:
+        Response object
+    """
+    logger.debug(f"Fetching URL with cloudscraper: {url}")
+    scraper = cloudscraper.create_scraper(
+        browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'mobile': False
+        }
+    )
+    response = scraper.get(url, timeout=config.REQUEST_TIMEOUT)
+    response.raise_for_status()
+    return response
+
+
+def fetch_with_fallback(url: str) -> requests.Response:
+    """
+    Fetch URL with multiple fallback methods to bypass anti-bot protection
+    1. Try curl_cffi with chrome impersonation
+    2. Try cloudscraper (bypasses Cloudflare)
+    3. Try curl_cffi with safari impersonation
+    4. Try standard requests as last resort
+    
+    Args:
+        url: URL to fetch
+        
+    Returns:
+        Response object
+        
+    Raises:
+        Exception: If all methods fail
+    """
+    methods = [
+        ("curl_cffi (chrome)", lambda: fetch_with_curl_cffi(url, "chrome142")),
+        ("cloudscraper", lambda: fetch_with_cloudscraper(url)),
+        ("curl_cffi (safari)", lambda: fetch_with_curl_cffi(url, "safari17_0")),
+        ("requests", lambda: fetch_with_requests(url))
+    ]
+    
+    last_error = None
+    for method_name, fetch_func in methods:
+        try:
+            logger.info(f"🔄 Trying {method_name} for: {url[:60]}...")
+            response = fetch_func()
+            logger.info(f"✅ Success with {method_name}")
+            return response
+        except Exception as e:
+            last_error = e
+            error_msg = str(e)[:100]
+            logger.warning(f"⚠️ {method_name} failed: {error_msg}")
+            time.sleep(1)  # Small delay before trying next method
+            continue
+    
+    logger.error(f"❌ All fetch methods failed for {url[:60]}")
+    raise last_error
 
 
 def parse_html(html_content: str) -> BeautifulSoup:

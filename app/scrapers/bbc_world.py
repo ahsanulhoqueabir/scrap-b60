@@ -6,7 +6,7 @@ import feedparser
 from typing import List, Dict, Tuple
 from app.logger import setup_logger
 from app.utils import (
-    fetch_with_curl_cffi,
+    fetch_with_fallback,
     parse_html,
     save_json,
     check_article_exists_in_directus,
@@ -35,7 +35,7 @@ def get_article_image_content(url: str) -> Tuple[str, str]:
         Tuple of (image_url, full_text)
     """
     try:
-        response = fetch_with_curl_cffi(url, impersonate="chrome142")
+        response = fetch_with_fallback(url)
         soup = parse_html(response.content)
         
         # Extract image

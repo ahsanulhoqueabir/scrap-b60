@@ -6,7 +6,7 @@ import feedparser
 from typing import List, Dict, Tuple
 from app.logger import setup_logger
 from app.utils import (
-    fetch_with_curl_cffi,
+    fetch_with_fallback,
     parse_html,
     save_json,
     check_article_exists_in_directus,
@@ -26,7 +26,7 @@ MAX_ARTICLES = 5
 
 def get_article_image_fulltext(url: str) -> Tuple[str, str]:
     """
-    Extract image and full text from article page
+    Extract image and full text from article page with fallback strategies
     
     Args:
         url: Article URL
@@ -35,21 +35,36 @@ def get_article_image_fulltext(url: str) -> Tuple[str, str]:
         Tuple of (image_url, full_text)
     """
     try:
-        response = fetch_with_curl_cffi(url, impersonate='safari260')
-        soup = parse_html(response.content)
+        # Try multiple impersonation strategies
+        impersonate_options = ['safari260', 'chrome142', 'safari15_5']
+        last_error = None
         
-        # Extract image
-        image = soup.find("meta", property="og:image")
-        image_url = image["content"] if image else "No image found"
-        logger.debug(f"Extracted image: {image_url}")
+        for impersonate in impersonate_options:
+            try:
+                logger.debug(f"Attempting to fetch with curl_cffi ({impersonate}): {url}")
+                response = fetch_with_fallback(url)
+                soup = parse_html(response.content)
+                
+                # Extract image
+                image = soup.find("meta", property="og:image")
+                image_url = image["content"] if image else "No image found"
+                logger.debug(f"Extracted image: {image_url}")
+                
+                # Extract content
+                raw_text = soup.find_all('p', class_='alignfull')
+                clean_text = [p.text.strip() for p in raw_text if p.text.strip()]
+                full_text = '\n\n'.join(clean_text)
+                logger.debug(f"Extracted {len(clean_text)} paragraphs with {impersonate}")
+                
+                return image_url, full_text
+                
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Impersonate {impersonate} failed: {str(e)[:100]}")
+                continue
         
-        # Extract content
-        raw_text = soup.find_all('p', class_='alignfull')
-        clean_text = [p.text.strip() for p in raw_text if p.text.strip()]
-        full_text = '\n\n'.join(clean_text)
-        logger.debug(f"Extracted {len(clean_text)} paragraphs")
-        
-        return image_url, full_text
+        # All impersonation options failed
+        raise last_error
         
     except Exception as e:
         logger.error(f"Failed to extract content from {url}: {str(e)}")

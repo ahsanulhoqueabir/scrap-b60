@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 from app.logger import setup_logger
 from app.utils import (
-    fetch_with_requests,
+    fetch_with_fallback,
     parse_html,
     extract_og_image,
     extract_paragraphs,
@@ -40,7 +40,7 @@ def get_image_and_content(article_url: str) -> Tuple[str, str]:
         Tuple of (image_url, full_content)
     """
     try:
-        response = fetch_with_requests(article_url)
+        response = fetch_with_fallback(article_url)
         soup = parse_html(response.text)
         
         # Extract image

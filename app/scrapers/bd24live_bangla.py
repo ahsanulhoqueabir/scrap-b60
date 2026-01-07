@@ -6,7 +6,7 @@ import feedparser
 from typing import List, Dict
 from app.logger import setup_logger
 from app.utils import (
-    fetch_with_requests,
+    fetch_with_fallback,
     parse_html,
     extract_og_image,
     save_json,
@@ -36,7 +36,7 @@ def get_main_image(article_url: str) -> str:
         Image URL
     """
     try:
-        response = fetch_with_requests(article_url)
+        response = fetch_with_fallback(article_url)
         soup = parse_html(response.text)
         
         # Method 1: Check Open Graph Meta Tags

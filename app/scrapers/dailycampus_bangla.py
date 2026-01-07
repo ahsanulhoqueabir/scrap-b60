@@ -8,7 +8,7 @@ import datetime
 from typing import List, Dict, Tuple
 from app.logger import setup_logger
 from app.utils import (
-    fetch_with_curl_cffi,
+    fetch_with_fallback,
     parse_html,
     save_json,
     check_article_exists_in_directus,
@@ -50,7 +50,7 @@ def get_list_articles(url: str) -> List[str]:
         List of article URLs
     """
     try:
-        response = fetch_with_curl_cffi(url, impersonate='chrome131')
+        response = fetch_with_fallback(url)
         soup = parse_html(response.content)
         
         contents = soup.find_all("h6", class_='card-title')
@@ -75,7 +75,7 @@ def get_article(url: str) -> Tuple[str, str, str, str]:
         Tuple of (title, image_url, full_text, published_date)
     """
     try:
-        response = fetch_with_curl_cffi(url, impersonate='firefox144')
+        response = fetch_with_fallback(url)
         soup = parse_html(response.content)
         
         # Get title

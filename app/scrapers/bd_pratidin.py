@@ -6,7 +6,7 @@ import feedparser
 from typing import List, Dict, Optional
 from app.logger import setup_logger
 from app.utils import (
-    fetch_with_curl_cffi,
+    fetch_with_fallback,
     parse_html,
     save_json,
     check_article_exists_in_directus,
@@ -35,7 +35,7 @@ def get_article_content(article_url: str) -> str:
         Full article text
     """
     try:
-        response = fetch_with_curl_cffi(article_url, impersonate="chrome142")
+        response = fetch_with_fallback(article_url)
         soup = parse_html(response.text)
         
         content = soup.find("article")
